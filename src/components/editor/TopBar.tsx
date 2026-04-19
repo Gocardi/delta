@@ -22,6 +22,8 @@ export function TopBar() {
   const activeSlideId = useEditorStore((s) => s.activeSlideId);
   const isSaving = useEditorStore((s) => s.isSaving);
   const saveToCloud = useEditorStore((s) => s.saveToCloud);
+  const startPresentation = useEditorStore((s) => s.startPresentation);
+  const slides = useEditorStore((s) => s.slides);
 
   const hasSlide = activeSlideId !== null;
 
@@ -98,7 +100,9 @@ export function TopBar() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          disabled={slides.length === 0}
+          onClick={startPresentation}
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
         >
           <Play className="h-3.5 w-3.5" />
           Presentar

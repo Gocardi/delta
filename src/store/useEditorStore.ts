@@ -38,6 +38,8 @@ export interface EditorState {
   activeSlideId: string | null;
   selectedElementId: string | null;
   isSaving: boolean;
+  isPresenting: boolean;
+  presentationSlideIndex: number;
 
   // Slide actions
   addSlide: () => void;
@@ -62,6 +64,12 @@ export interface EditorState {
   // Cloud persistence
   saveToCloud: (presentationId: string) => Promise<void>;
   loadFromCloud: (presentationId: string) => Promise<void>;
+
+  // Presentation mode
+  startPresentation: () => void;
+  stopPresentation: () => void;
+  nextPresentationSlide: () => void;
+  prevPresentationSlide: () => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -69,6 +77,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   activeSlideId: null,
   selectedElementId: null,
   isSaving: false,
+  isPresenting: false,
+  presentationSlideIndex: 0,
 
   // ── Slide actions ──────────────────────────────────────────────
   addSlide: () => set((state) => {
@@ -295,4 +305,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       console.error('[Delta] Load from cloud failed:', err);
     }
   },
+
+  // ── Presentation mode ──────────────────────────────────────────
+  startPresentation: () => set((state) => {
+    if (state.slides.length === 0) return state;
+    const currentIndex = state.activeSlideId
+      ? state.slides.findIndex((s) => s.id === state.activeSlideId)
+      : 0;
+    return {
+      isPresenting: true,
+      presentationSlideIndex: Math.max(0, currentIndex),
+      selectedElementId: null,
+    };
+  }),
+
+  stopPresentation: () => set({ isPresenting: false }),
+
+  nextPresentationSlide: () => set((state) => ({
+    presentationSlideIndex: Math.min(
+      state.presentationSlideIndex + 1,
+      state.slides.length - 1
+    ),
+  })),
+
+  prevPresentationSlide: () => set((state) => ({
+    presentationSlideIndex: Math.max(state.presentationSlideIndex - 1, 0),
+  })),
 }));
