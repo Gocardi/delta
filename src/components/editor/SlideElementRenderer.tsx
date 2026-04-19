@@ -38,13 +38,14 @@ export function SlideElementRenderer({ element }: Props) {
       }`}
       style={{
         position: "absolute",
-        margin: 0,
-        transformOrigin: "top left",
-        boxSizing: "border-box",
         left: `${x}%`,
         top: `${y}%`,
         width: `${width}%`,
         height: `${height}%`,
+        margin: 0,
+        transformOrigin: "top left",
+        boxSizing: "border-box",
+        pointerEvents: type === "text" ? "auto" : "none",
         transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
       }}
     >
@@ -53,14 +54,16 @@ export function SlideElementRenderer({ element }: Props) {
         <div
           contentEditable={true}
           suppressContentEditableWarning={true}
-          onBlur={(e) => updateElementContent(id, e.currentTarget.innerText)}
+          onBlur={(e) => {
+            const newContent = e.currentTarget.innerText.trim();
+            updateElementContent(id, newContent === "" ? "Haz doble clic para editar" : newContent);
+          }}
           className="block h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1 outline-none"
           style={{
             color: style.color,
             fontSize: style.fontSize ? `${style.fontSize}px` : undefined,
             fontWeight: style.fontWeight,
             textAlign: style.textAlign,
-            pointerEvents: "auto",
           }}
         >
           {content}
@@ -73,7 +76,7 @@ export function SlideElementRenderer({ element }: Props) {
         <img
           src={content}
           alt=""
-          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          style={{ width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none" }}
           draggable={false}
         />
       )}
