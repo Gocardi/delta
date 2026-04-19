@@ -8,6 +8,7 @@ import { RightSidebar } from "@/src/components/editor/RightSidebar";
 import { PresentationViewer } from "@/src/components/editor/PresentationViewer";
 import { useAutosave } from "@/src/hooks/useAutosave";
 import { useEditorStore } from "@/src/store/useEditorStore";
+import { account } from "@/src/lib/appwrite";
 
 const STATIC_PRESENTATION_ID = "test_presentation_1";
 
@@ -17,7 +18,16 @@ export function EditorShell() {
 
   // Load saved data on mount
   useEffect(() => {
-    void loadFromCloud(STATIC_PRESENTATION_ID);
+    const initSession = async () => {
+      try {
+        await account.get();
+      } catch {
+        await account.createAnonymousSession();
+      }
+      void loadFromCloud(STATIC_PRESENTATION_ID);
+    };
+    
+    initSession();
   }, [loadFromCloud]);
 
   // Autosave on slides change (debounced 3s)
