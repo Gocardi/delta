@@ -122,15 +122,33 @@ interface PresentationElementProps {
 function PresentationElement({ element, index }: PresentationElementProps) {
   const { type, x, y, width, height, rotation, content, style } = element;
 
+  const animation = style.animation || "fade";
+
+  let initial: any = { opacity: 0, y: 20, scale: 0.95 };
+  let animate: any = { opacity: 1, y: 0, scale: 1 };
+  let transition: any = { delay: 0.2 + index * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+
+  if (animation === "none") {
+    initial = { opacity: 1, y: 0, scale: 1 };
+    animate = { opacity: 1, y: 0, scale: 1 };
+    transition = { duration: 0 };
+  } else if (animation === "fade") {
+    initial = { opacity: 0 };
+    animate = { opacity: 1 };
+  } else if (animation === "slide-up") {
+    initial = { opacity: 0, y: 50 };
+    animate = { opacity: 1, y: 0 };
+  } else if (animation === "bounce") {
+    initial = { opacity: 0, y: -50 };
+    animate = { opacity: 1, y: 0 };
+    transition = { delay: 0.2 + index * 0.1, type: "spring", bounce: 0.5 };
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        delay: 0.2 + index * 0.1,
-        duration: 0.5,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      initial={initial}
+      animate={animate}
+      transition={transition}
       className="absolute"
       style={{
         left: `${x}%`,
@@ -141,8 +159,8 @@ function PresentationElement({ element, index }: PresentationElementProps) {
       }}
     >
       {type === "text" && (
-        <span
-          className="block h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1"
+        <div
+          className="block h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1 outline-none"
           style={{
             color: style.color,
             fontSize: style.fontSize ? `${style.fontSize}px` : undefined,
@@ -151,7 +169,7 @@ function PresentationElement({ element, index }: PresentationElementProps) {
           }}
         >
           {content}
-        </span>
+        </div>
       )}
 
       {type === "image" && content && (
@@ -159,7 +177,7 @@ function PresentationElement({ element, index }: PresentationElementProps) {
         <img
           src={content}
           alt=""
-          className="h-full w-full object-cover"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
           draggable={false}
         />
       )}

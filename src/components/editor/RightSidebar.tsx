@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CodeConsole } from "./CodeConsole";
 
 /* ── Curated color palette ─────────────────────────────────── */
@@ -243,6 +244,7 @@ interface ElementPanelProps {
       fontWeight?: "normal" | "bold" | "bolder";
       textAlign?: "left" | "center" | "right";
       borderRadius?: number;
+      animation?: "none" | "fade" | "slide-up" | "bounce";
     };
   };
   onUpdatePosition: (id: string, x: number, y: number) => void;
@@ -361,6 +363,27 @@ function ElementPanel({
           </p>
         </section>
       )}
+
+      <Separator />
+
+      {/* ── Animation section ── */}
+      <section className="px-4 py-3">
+        <Label className="text-xs text-muted-foreground mb-2">Animación</Label>
+        <Select
+          value={style.animation || "none"}
+          onValueChange={(val: "none" | "fade" | "slide-up" | "bounce") => onUpdateStyle(id, { animation: val })}
+        >
+          <SelectTrigger className="w-full mt-1">
+            <SelectValue placeholder="Selecciona..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Ninguna</SelectItem>
+            <SelectItem value="fade">Aparecer (Fade)</SelectItem>
+            <SelectItem value="slide-up">Deslizar Arriba</SelectItem>
+            <SelectItem value="bounce">Rebotar</SelectItem>
+          </SelectContent>
+        </Select>
+      </section>
 
       <Separator />
 

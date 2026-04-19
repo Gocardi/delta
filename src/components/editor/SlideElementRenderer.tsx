@@ -10,6 +10,7 @@ interface Props {
 export function SlideElementRenderer({ element }: Props) {
   const selectElement = useEditorStore((s) => s.selectElement);
   const selectedElementId = useEditorStore((s) => s.selectedElementId);
+  const updateElementContent = useEditorStore((s) => s.updateElementContent);
 
   const isSelected = element.id === selectedElementId;
   const { id, type, x, y, width, height, rotation, content, style } = element;
@@ -36,6 +37,10 @@ export function SlideElementRenderer({ element }: Props) {
         isSelected ? "" : "hover:outline hover:outline-1 hover:outline-primary/30"
       }`}
       style={{
+        position: "absolute",
+        margin: 0,
+        transformOrigin: "top left",
+        boxSizing: "border-box",
         left: `${x}%`,
         top: `${y}%`,
         width: `${width}%`,
@@ -45,17 +50,21 @@ export function SlideElementRenderer({ element }: Props) {
     >
       {/* ── Text element ── */}
       {type === "text" && (
-        <span
-          className="block h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1"
+        <div
+          contentEditable={true}
+          suppressContentEditableWarning={true}
+          onBlur={(e) => updateElementContent(id, e.currentTarget.innerText)}
+          className="block h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1 outline-none"
           style={{
             color: style.color,
             fontSize: style.fontSize ? `${style.fontSize}px` : undefined,
             fontWeight: style.fontWeight,
             textAlign: style.textAlign,
+            pointerEvents: "auto",
           }}
         >
           {content}
-        </span>
+        </div>
       )}
 
       {/* ── Image element ── */}
@@ -64,7 +73,7 @@ export function SlideElementRenderer({ element }: Props) {
         <img
           src={content}
           alt=""
-          className="h-full w-full object-cover"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
           draggable={false}
         />
       )}

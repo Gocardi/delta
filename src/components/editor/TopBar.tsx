@@ -73,6 +73,35 @@ export function TopBar() {
             disabled={!hasSlide}
             onClick={() => addElement("shape")}
           />
+          <label
+            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+              !hasSlide
+                ? "opacity-40 cursor-not-allowed pointer-events-none"
+                : "cursor-pointer hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+            }`}
+          >
+            <Cloud className="h-4 w-4" /> {/* Use Cloud or any icon for image */}
+            Imagen
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={!hasSlide}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  if (ev.target?.result && typeof ev.target.result === "string") {
+                    addElement("image", ev.target.result);
+                  }
+                };
+                reader.readAsDataURL(file);
+                // clear input so same file can be selected again
+                e.target.value = '';
+              }}
+            />
+          </label>
         </div>
       </div>
 

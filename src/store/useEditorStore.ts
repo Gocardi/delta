@@ -24,6 +24,7 @@ export interface SlideElement {
     fontWeight?: 'normal' | 'bold' | 'bolder';
     textAlign?: 'left' | 'center' | 'right';
     borderRadius?: number;
+    animation?: 'none' | 'fade' | 'slide-up' | 'bounce';
   };
 }
 
@@ -53,7 +54,7 @@ export interface EditorState {
   selectElement: (id: string | null) => void;
 
   // Element creation & deletion
-  addElement: (type: ElementType) => void;
+  addElement: (type: ElementType, content?: string) => void;
   deleteElement: (elementId: string) => void;
 
   // Element mutations
@@ -140,7 +141,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectElement: (id) => set({ selectedElementId: id }),
 
   // ── Element creation ───────────────────────────────────────────
-  addElement: (type) => set((state) => {
+  addElement: (type, content) => set((state) => {
     if (!state.activeSlideId) return state;
 
     const newId = `el_${Date.now()}`;
@@ -150,10 +151,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       type,
       x: 40,
       y: 40,
-      width: 20,
-      height: 20,
+      width: 30,
+      height: 30,
       rotation: 0,
-      content: '',
+      content: content ?? '',
       style: {},
     };
 
@@ -165,13 +166,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     } else if (type === 'shape') {
       base.width = 20;
       base.height = 20;
-      base.content = '';
       base.style = { backgroundColor: '#e5e7eb', borderRadius: 0 };
-    } else if (type === 'image') {
-      base.width = 30;
-      base.height = 30;
-      base.content = '';
-      base.style = {};
     }
 
     return {

@@ -82,7 +82,7 @@ export function Canvas() {
       {/* ── Slide surface (16:9) ── */}
       <div
         ref={canvasRef}
-        className="relative aspect-video w-full max-w-4xl rounded-lg shadow-xl ring-1 ring-border/50 transition-shadow overflow-hidden"
+        className="relative aspect-video w-full max-w-4xl rounded-lg shadow-xl ring-1 ring-border/50 transition-shadow overflow-hidden origin-top-left"
         style={{
           backgroundColor: currentSlide?.background ?? "#ffffff",
         }}
@@ -117,6 +117,8 @@ export function Canvas() {
           container={canvasRef.current}
           draggable
           resizable
+          snappable={true}
+          bounds={{ left: 0, top: 0, right: 100, bottom: 100, position: "css" }}
           /* ── Appearance ── */
           edge={false}
           renderDirections={["nw", "ne", "sw", "se", "n", "s", "e", "w"]}
