@@ -1,8 +1,25 @@
-import { Presentation, Download, Save, Undo2, Redo2, Play } from "lucide-react";
+"use client";
+
+import {
+  Presentation,
+  Download,
+  Save,
+  Undo2,
+  Redo2,
+  Play,
+  Type,
+  Square,
+} from "lucide-react";
+import { useEditorStore } from "@/src/store/useEditorStore";
 
 export function TopBar() {
+  const addElement = useEditorStore((s) => s.addElement);
+  const activeSlideId = useEditorStore((s) => s.activeSlideId);
+
+  const hasSlide = activeSlideId !== null;
+
   return (
-    <header className="flex items-center justify-between h-12 px-4 border-b border-border bg-background shrink-0 select-none">
+    <header className="relative flex items-center justify-between h-12 px-4 border-b border-border bg-background shrink-0 select-none">
       {/* ── Left: Brand + History ── */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -29,6 +46,24 @@ export function TopBar() {
           >
             <Redo2 className="h-4 w-4" />
           </button>
+        </div>
+
+        <span className="h-4 w-px bg-border" aria-hidden="true" />
+
+        {/* ── Toolbox ── */}
+        <div className="flex items-center gap-0.5">
+          <ToolboxButton
+            icon={<Type className="h-4 w-4" />}
+            label="Texto"
+            disabled={!hasSlide}
+            onClick={() => addElement("text")}
+          />
+          <ToolboxButton
+            icon={<Square className="h-4 w-4" />}
+            label="Forma"
+            disabled={!hasSlide}
+            onClick={() => addElement("shape")}
+          />
         </div>
       </div>
 
@@ -64,5 +99,27 @@ export function TopBar() {
         </button>
       </div>
     </header>
+  );
+}
+
+/* ── Toolbox button ──────────────────────────────────────────── */
+interface ToolboxButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}
+
+function ToolboxButton({ icon, label, disabled, onClick }: ToolboxButtonProps) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:pointer-events-none"
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 }

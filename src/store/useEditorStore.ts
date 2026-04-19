@@ -42,6 +42,9 @@ export interface EditorState {
   // Element selection
   selectElement: (id: string | null) => void;
 
+  // Element creation
+  addElement: (type: ElementType) => void;
+
   // Element mutations
   updateElementPosition: (elementId: string, x: number, y: number) => void;
   updateElementSize: (elementId: string, width: number, height: number) => void;
@@ -96,6 +99,51 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   // ── Element selection ──────────────────────────────────────────
   selectElement: (id) => set({ selectedElementId: id }),
+
+  // ── Element creation ───────────────────────────────────────────
+  addElement: (type) => set((state) => {
+    if (!state.activeSlideId) return state;
+
+    const newId = `el_${Date.now()}`;
+
+    const base: SlideElement = {
+      id: newId,
+      type,
+      x: 40,
+      y: 40,
+      width: 20,
+      height: 20,
+      rotation: 0,
+      content: '',
+      style: {},
+    };
+
+    if (type === 'text') {
+      base.width = 30;
+      base.height = 10;
+      base.content = 'Nuevo Texto';
+      base.style = { fontSize: 24, color: '#171717', textAlign: 'left' };
+    } else if (type === 'shape') {
+      base.width = 20;
+      base.height = 20;
+      base.content = '';
+      base.style = { backgroundColor: '#e5e7eb', borderRadius: 0 };
+    } else if (type === 'image') {
+      base.width = 30;
+      base.height = 30;
+      base.content = '';
+      base.style = {};
+    }
+
+    return {
+      slides: state.slides.map((slide) =>
+        slide.id === state.activeSlideId
+          ? { ...slide, elements: [...slide.elements, base] }
+          : slide
+      ),
+      selectedElementId: newId,
+    };
+  }),
 
   // ── Element mutations ──────────────────────────────────────────
   updateElementPosition: (elementId, x, y) => set((state) => ({
