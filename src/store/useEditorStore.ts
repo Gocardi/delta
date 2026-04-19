@@ -42,8 +42,9 @@ export interface EditorState {
   // Element selection
   selectElement: (id: string | null) => void;
 
-  // Element creation
+  // Element creation & deletion
   addElement: (type: ElementType) => void;
+  deleteElement: (elementId: string) => void;
 
   // Element mutations
   updateElementPosition: (elementId: string, x: number, y: number) => void;
@@ -142,6 +143,20 @@ export const useEditorStore = create<EditorState>((set) => ({
           : slide
       ),
       selectedElementId: newId,
+    };
+  }),
+
+  // ── Element deletion ───────────────────────────────────────────
+  deleteElement: (elementId) => set((state) => {
+    if (!state.activeSlideId) return state;
+    return {
+      slides: state.slides.map((slide) =>
+        slide.id === state.activeSlideId
+          ? { ...slide, elements: slide.elements.filter((el) => el.id !== elementId) }
+          : slide
+      ),
+      selectedElementId:
+        state.selectedElementId === elementId ? null : state.selectedElementId,
     };
   }),
 

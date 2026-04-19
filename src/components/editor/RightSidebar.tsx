@@ -51,6 +51,7 @@ export function RightSidebar() {
   const updateSlideBackground = useEditorStore((s) => s.updateSlideBackground);
   const duplicateSlide = useEditorStore((s) => s.duplicateSlide);
   const deleteSlide = useEditorStore((s) => s.deleteSlide);
+  const deleteElement = useEditorStore((s) => s.deleteElement);
 
   const activeSlide = slides.find((s) => s.id === activeSlideId);
   const selectedElement = activeSlide?.elements.find(
@@ -78,6 +79,7 @@ export function RightSidebar() {
             onUpdateSize={updateElementSize}
             onUpdateContent={updateElementContent}
             onUpdateStyle={updateElementStyle}
+            onDelete={() => deleteElement(selectedElement.id)}
           />
         ) : (
           <SlidePanel
@@ -235,6 +237,7 @@ interface ElementPanelProps {
     id: string,
     overrides: Partial<ElementPanelProps["element"]["style"]>
   ) => void;
+  onDelete: () => void;
 }
 
 function ElementPanel({
@@ -243,6 +246,7 @@ function ElementPanel({
   onUpdateSize,
   onUpdateContent,
   onUpdateStyle,
+  onDelete,
 }: ElementPanelProps) {
   const { id, type, x, y, width, height, content, style } = element;
 
@@ -342,6 +346,23 @@ function ElementPanel({
           </p>
         </section>
       )}
+
+      <Separator />
+
+      {/* ── Delete element ── */}
+      <section className="px-4 py-3">
+        <button
+          type="button"
+          onClick={onDelete}
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Eliminar elemento
+        </button>
+        <p className="mt-1.5 text-center text-[10px] text-muted-foreground/50">
+          o presiona Delete / Backspace
+        </p>
+      </section>
     </div>
   );
 }

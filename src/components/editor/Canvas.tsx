@@ -12,6 +12,7 @@ export function Canvas() {
   const selectElement = useEditorStore((s) => s.selectElement);
   const updateElementPosition = useEditorStore((s) => s.updateElementPosition);
   const updateElementSize = useEditorStore((s) => s.updateElementSize);
+  const deleteElement = useEditorStore((s) => s.deleteElement);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +27,22 @@ export function Canvas() {
       setMoveableTarget(null);
     }
   }, [selectedElementId]);
+
+  // ── Keyboard shortcuts: Delete / Backspace to remove element ──
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (document.activeElement?.tagName ?? "").toUpperCase();
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedElementId) {
+        e.preventDefault();
+        deleteElement(selectedElementId);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedElementId, deleteElement]);
 
   const currentSlide = slides.find((s) => s.id === activeSlideId);
 
