@@ -1,15 +1,50 @@
 "use client";
 
+import { useRef, useEffect, useState, useCallback } from "react";
+import Moveable from "react-moveable";
 import { useEditorStore } from "@/src/store/useEditorStore";
-import type { SlideElement } from "@/src/store/useEditorStore";
+import { SlideElementRenderer } from "./SlideElementRenderer";
 
 export function Canvas() {
   const slides = useEditorStore((s) => s.slides);
   const activeSlideId = useEditorStore((s) => s.activeSlideId);
   const selectedElementId = useEditorStore((s) => s.selectedElementId);
   const selectElement = useEditorStore((s) => s.selectElement);
+  const updateElementPosition = useEditorStore((s) => s.updateElementPosition);
+  const updateElementSize = useEditorStore((s) => s.updateElementSize);
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // ── Track the DOM target for Moveable ──
+  const [moveableTarget, setMoveableTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (selectedElementId) {
+      const el = document.getElementById(`element-${selectedElementId}`);
+      setMoveableTarget(el);
+    } else {
+      setMoveableTarget(null);
+    }
+  }, [selectedElementId]);
 
   const currentSlide = slides.find((s) => s.id === activeSlideId);
+
+  // ── Convert px back to % relative to the canvas container ──
+  const toPercent = useCallback(
+    (pxX: number, pxY: number, pxW?: number, pxH?: number) => {
+      const container = canvasRef.current;
+      if (!container) return { x: 0, y: 0, w: 0, h: 0 };
+      const cw = container.offsetWidth;
+      const ch = container.offsetHeight;
+      return {
+        x: (pxX / cw) * 100,
+        y: (pxY / ch) * 100,
+        w: pxW !== undefined ? (pxW / cw) * 100 : 0,
+        h: pxH !== undefined ? (pxH / ch) * 100 : 0,
+      };
+    },
+    []
+  );
 
   return (
     <main
@@ -29,14 +64,21 @@ export function Canvas() {
 
       {/* ── Slide surface (16:9) ── */}
       <div
+        ref={canvasRef}
         className="relative aspect-video w-full max-w-4xl rounded-lg shadow-xl ring-1 ring-border/50 transition-shadow overflow-hidden"
         style={{
           backgroundColor: currentSlide?.background ?? "#ffffff",
         }}
+        onClick={(e) => {
+          // Only deselect if clicking directly on the canvas bg
+          if (e.target === e.currentTarget) {
+            selectElement(null);
+          }
+        }}
       >
         {/* ── Empty state ── */}
         {(!currentSlide || currentSlide.elements.length === 0) && (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full items-center justify-center pointer-events-none">
             <p className="text-sm text-muted-foreground/40 select-none">
               {currentSlide
                 ? "Haz clic para añadir contenido"
@@ -47,89 +89,78 @@ export function Canvas() {
 
         {/* ── Elements layer ── */}
         {currentSlide?.elements.map((el) => (
-          <SlideElementRenderer
-            key={el.id}
-            element={el}
-            isSelected={el.id === selectedElementId}
-            onSelect={selectElement}
-          />
+          <SlideElementRenderer key={el.id} element={el} />
         ))}
       </div>
-    </main>
-  );
-}
 
-/* ── Individual element renderer ── */
+      {/* ── Single Moveable controller ── */}
+      {moveableTarget && selectedElementId && (
+        <Moveable
+          target={moveableTarget}
+          container={canvasRef.current}
+          draggable
+          resizable
+          /* ── Appearance ── */
+          edge={false}
+          renderDirections={["nw", "ne", "sw", "se", "n", "s", "e", "w"]}
+          /* ─────────────────────────────────────────────────
+           *  DRAG: update transform visually during drag,
+           *  then commit % position to Zustand on drag end.
+           * ───────────────────────────────────────────────── */
+          onDrag={(e) => {
+            e.target.style.left = `${e.left}px`;
+            e.target.style.top = `${e.top}px`;
+          }}
+          onDragEnd={(e) => {
+            const el = e.target as HTMLElement;
+            const container = canvasRef.current;
+            if (!container || !selectedElementId) return;
 
-interface SlideElementRendererProps {
-  element: SlideElement;
-  isSelected: boolean;
-  onSelect: (id: string | null) => void;
-}
+            const leftPx = parseFloat(el.style.left) || 0;
+            const topPx = parseFloat(el.style.top) || 0;
 
-function SlideElementRenderer({
-  element,
-  isSelected,
-  onSelect,
-}: SlideElementRendererProps) {
-  const { id, x, y, width, height, rotation, content, type, style } = element;
+            const { x, y } = toPercent(leftPx, topPx);
 
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(id);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          e.stopPropagation();
-          onSelect(id);
-        }
-      }}
-      className={`absolute cursor-pointer transition-[box-shadow] ${
-        isSelected
-          ? "ring-2 ring-primary ring-offset-1"
-          : "hover:ring-1 hover:ring-primary/40"
-      }`}
-      style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        width: `${width}%`,
-        height: `${height}%`,
-        transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
-        color: style.color,
-        backgroundColor: style.backgroundColor,
-        fontSize: style.fontSize ? `${style.fontSize}px` : undefined,
-        fontWeight: style.fontWeight,
-        textAlign: style.textAlign,
-        borderRadius: style.borderRadius
-          ? `${style.borderRadius}px`
-          : undefined,
-      }}
-    >
-      {/* ── Render content based on type ── */}
-      {type === "text" && (
-        <span className="block h-full w-full overflow-hidden whitespace-pre-wrap break-words p-1">
-          {content}
-        </span>
-      )}
+            updateElementPosition(selectedElementId, x, y);
 
-      {type === "image" && content && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={content}
-          alt=""
-          className="h-full w-full object-cover"
-          draggable={false}
+            // Reset inline to let React re-render from Zustand
+            el.style.left = `${x}%`;
+            el.style.top = `${y}%`;
+          }}
+          /* ─────────────────────────────────────────────────
+           *  RESIZE: update size + position during resize,
+           *  then commit to Zustand on resize end.
+           * ───────────────────────────────────────────────── */
+          onResize={(e) => {
+            e.target.style.width = `${e.width}px`;
+            e.target.style.height = `${e.height}px`;
+            e.target.style.left = `${e.drag.left}px`;
+            e.target.style.top = `${e.drag.top}px`;
+          }}
+          onResizeEnd={(e) => {
+            const el = e.target as HTMLElement;
+            const container = canvasRef.current;
+            if (!container || !selectedElementId) return;
+
+            const widthPx = parseFloat(el.style.width) || 0;
+            const heightPx = parseFloat(el.style.height) || 0;
+            const leftPx = parseFloat(el.style.left) || 0;
+            const topPx = parseFloat(el.style.top) || 0;
+
+            const { x, y } = toPercent(leftPx, topPx);
+            const { w, h } = toPercent(0, 0, widthPx, heightPx);
+
+            updateElementPosition(selectedElementId, x, y);
+            updateElementSize(selectedElementId, w, h);
+
+            // Reset inline to let React re-render from Zustand
+            el.style.left = `${x}%`;
+            el.style.top = `${y}%`;
+            el.style.width = `${w}%`;
+            el.style.height = `${h}%`;
+          }}
         />
       )}
-
-      {type === "shape" && (
-        <div className="h-full w-full" />
-      )}
-    </div>
+    </main>
   );
 }
