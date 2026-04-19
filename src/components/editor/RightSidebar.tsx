@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CodeConsole } from "./CodeConsole";
 
 /* ── Curated color palette ─────────────────────────────────── */
 const BACKGROUND_COLORS = [
@@ -60,39 +62,52 @@ export function RightSidebar() {
 
   return (
     <aside className="flex w-72 flex-col border-l border-border bg-background shrink-0 select-none">
-      {/* ── Header ── */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Settings2 className="h-4 w-4 text-muted-foreground" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {selectedElement ? "Elemento" : "Diapositiva"}
-        </span>
-      </div>
+      <Tabs defaultValue="visual" className="flex flex-col h-full">
+        {/* ── Header ── */}
+        <div className="px-4 pt-3 pb-2 border-b border-border space-y-3">
+          <div className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {selectedElement ? "Elemento" : "Diapositiva"}
+            </span>
+          </div>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="visual" className="text-xs">Visual</TabsTrigger>
+            <TabsTrigger value="code" className="text-xs">JSON</TabsTrigger>
+          </TabsList>
+        </div>
 
-      {/* ── Scrollable panel ── */}
-      <div className="flex-1 overflow-y-auto">
-        {!activeSlide ? (
-          <EmptyState />
-        ) : selectedElement ? (
-          <ElementPanel
-            element={selectedElement}
-            onUpdatePosition={updateElementPosition}
-            onUpdateSize={updateElementSize}
-            onUpdateContent={updateElementContent}
-            onUpdateStyle={updateElementStyle}
-            onDelete={() => deleteElement(selectedElement.id)}
-          />
-        ) : (
-          <SlidePanel
-            slide={activeSlide}
-            slideCount={slides.length}
-            onUpdateBackground={(bg) =>
-              updateSlideBackground(activeSlide.id, bg)
-            }
-            onDuplicate={() => duplicateSlide(activeSlide.id)}
-            onDelete={() => deleteSlide(activeSlide.id)}
-          />
-        )}
-      </div>
+        {/* ── Scrollable panel ── */}
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="visual" className="h-full m-0 data-[state=active]:flex flex-col overflow-y-auto">
+            {!activeSlide ? (
+              <EmptyState />
+            ) : selectedElement ? (
+              <ElementPanel
+                element={selectedElement}
+                onUpdatePosition={updateElementPosition}
+                onUpdateSize={updateElementSize}
+                onUpdateContent={updateElementContent}
+                onUpdateStyle={updateElementStyle}
+                onDelete={() => deleteElement(selectedElement.id)}
+              />
+            ) : (
+              <SlidePanel
+                slide={activeSlide}
+                slideCount={slides.length}
+                onUpdateBackground={(bg) =>
+                  updateSlideBackground(activeSlide.id, bg)
+                }
+                onDuplicate={() => duplicateSlide(activeSlide.id)}
+                onDelete={() => deleteSlide(activeSlide.id)}
+              />
+            )}
+          </TabsContent>
+          <TabsContent value="code" className="h-full m-0 data-[state=active]:flex flex-col">
+            <CodeConsole />
+          </TabsContent>
+        </div>
+      </Tabs>
     </aside>
   );
 }

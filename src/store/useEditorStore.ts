@@ -47,6 +47,7 @@ export interface EditorState {
   duplicateSlide: (slideId: string) => void;
   deleteSlide: (slideId: string) => void;
   updateSlideBackground: (slideId: string, background: string) => void;
+  updateSlideFromJSON: (slideId: string, jsonString: string) => void;
 
   // Element selection
   selectElement: (id: string | null) => void;
@@ -119,6 +120,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   updateSlideBackground: (slideId, background) => set((state) => ({
     slides: state.slides.map((s) => (s.id === slideId ? { ...s, background } : s)),
   })),
+
+  updateSlideFromJSON: (slideId, jsonString) => set((state) => {
+    try {
+      const parsed = JSON.parse(jsonString) as Slide;
+      // Validar estructura básica
+      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.elements)) {
+        return {
+          slides: state.slides.map((s) => (s.id === slideId ? parsed : s)),
+        };
+      }
+    } catch {
+      // Ignorar JSON inválido mientras el usuario escribe
+    }
+    return state;
+  }),
 
   // ── Element selection ──────────────────────────────────────────
   selectElement: (id) => set({ selectedElementId: id }),
