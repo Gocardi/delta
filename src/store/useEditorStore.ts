@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import { ID, Query } from 'appwrite';
+import {
+  databases,
+  APPWRITE_DATABASE_ID,
+  APPWRITE_COLLECTION_SLIDES,
+} from '@/src/lib/appwrite';
 
 export type ElementType = 'text' | 'image' | 'shape';
 
@@ -31,6 +37,7 @@ export interface EditorState {
   slides: Slide[];
   activeSlideId: string | null;
   selectedElementId: string | null;
+  isSaving: boolean;
 
   // Slide actions
   addSlide: () => void;
@@ -51,12 +58,17 @@ export interface EditorState {
   updateElementSize: (elementId: string, width: number, height: number) => void;
   updateElementContent: (elementId: string, content: string) => void;
   updateElementStyle: (elementId: string, styleOverrides: Partial<SlideElement['style']>) => void;
+
+  // Cloud persistence
+  saveToCloud: (presentationId: string) => Promise<void>;
+  loadFromCloud: (presentationId: string) => Promise<void>;
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
+export const useEditorStore = create<EditorState>((set, get) => ({
   slides: [],
   activeSlideId: null,
   selectedElementId: null,
+  isSaving: false,
 
   // ── Slide actions ──────────────────────────────────────────────
   addSlide: () => set((state) => {
@@ -190,4 +202,97 @@ export const useEditorStore = create<EditorState>((set) => ({
       ),
     })),
   })),
+
+  // ── Cloud persistence ──────────────────────────────────────────
+  saveToCloud: async (presentationId) => {
+    const { slides } = get();
+    if (slides.length === 0) return;
+
+    set({ isSaving: true });
+
+    try {
+      // 1. Fetch existing slide docs for this presentation
+      const existing = await databases.listDocuments(
+        APPWRITE_DATABASE_ID,
+        APPWRITE_COLLECTION_SLIDES,
+        [Query.equal('presentationId', presentationId), Query.limit(100)]
+      );
+
+      const existingIds = new Set(existing.documents.map((d) => d.$id));
+      const processedIds = new Set<string>();
+
+      // 2. Upsert each slide
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+        const docId = `${presentationId}_slide_${i}`;
+        const payload = {
+          presentationId,
+          order: i,
+          jsConfig: JSON.stringify(slide),
+        };
+
+        processedIds.add(docId);
+
+        if (existingIds.has(docId)) {
+          await databases.updateDocument(
+            APPWRITE_DATABASE_ID,
+            APPWRITE_COLLECTION_SLIDES,
+            docId,
+            payload
+          );
+        } else {
+          await databases.createDocument(
+            APPWRITE_DATABASE_ID,
+            APPWRITE_COLLECTION_SLIDES,
+            docId,
+            payload
+          );
+        }
+      }
+
+      // 3. Delete orphan docs (slides removed locally)
+      for (const doc of existing.documents) {
+        if (!processedIds.has(doc.$id)) {
+          await databases.deleteDocument(
+            APPWRITE_DATABASE_ID,
+            APPWRITE_COLLECTION_SLIDES,
+            doc.$id
+          );
+        }
+      }
+    } catch (err) {
+      console.error('[Delta] Save to cloud failed:', err);
+    } finally {
+      set({ isSaving: false });
+    }
+  },
+
+  loadFromCloud: async (presentationId) => {
+    try {
+      const result = await databases.listDocuments(
+        APPWRITE_DATABASE_ID,
+        APPWRITE_COLLECTION_SLIDES,
+        [
+          Query.equal('presentationId', presentationId),
+          Query.orderAsc('order'),
+          Query.limit(100),
+        ]
+      );
+
+      const slides: Slide[] = result.documents.map((doc) => {
+        const parsed = JSON.parse(doc.jsConfig as string) as Slide;
+        return parsed;
+      });
+
+      if (slides.length > 0) {
+        set({
+          slides,
+          activeSlideId: slides[0].id,
+          selectedElementId: null,
+        });
+      }
+    } catch (err) {
+      console.error('[Delta] Load from cloud failed:', err);
+    }
+  },
 }));

@@ -9,12 +9,19 @@ import {
   Play,
   Type,
   Square,
+  Cloud,
+  Loader2,
+  Check,
 } from "lucide-react";
 import { useEditorStore } from "@/src/store/useEditorStore";
+
+const STATIC_PRESENTATION_ID = "test_presentation_1";
 
 export function TopBar() {
   const addElement = useEditorStore((s) => s.addElement);
   const activeSlideId = useEditorStore((s) => s.activeSlideId);
+  const isSaving = useEditorStore((s) => s.isSaving);
+  const saveToCloud = useEditorStore((s) => s.saveToCloud);
 
   const hasSlide = activeSlideId !== null;
 
@@ -67,10 +74,23 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* ── Center: Document name ── */}
-      <div className="absolute left-1/2 -translate-x-1/2">
+      {/* ── Center: Document name + save status ── */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">
           Presentación sin título
+        </span>
+        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+          {isSaving ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Guardando…
+            </>
+          ) : (
+            <>
+              <Check className="h-3 w-3" />
+              Guardado
+            </>
+          )}
         </span>
       </div>
 
@@ -92,9 +112,15 @@ export function TopBar() {
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          disabled={isSaving || !hasSlide}
+          onClick={() => void saveToCloud(STATIC_PRESENTATION_ID)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          <Save className="h-3.5 w-3.5" />
+          {isSaving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Save className="h-3.5 w-3.5" />
+          )}
           Guardar
         </button>
       </div>
